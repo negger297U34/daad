@@ -2877,12 +2877,13 @@ function Library:Playerlist(Opts)
 		Library:Notify("copied", 2)
 	end)
 	local DisplayLabel = Text({ Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 14), TextTruncate = Enum.TextTruncate.AtEnd }, Details)
-	local StatusLabel = Text({ Position = UDim2.fromOffset(0, 32), Size = UDim2.new(1, 0, 0, 14), TextColor3 = Theme.Dim }, Details)
+	local StatusLabel = Text({ Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 14), TextColor3 = Theme.Dim }, Details)
 	local ArmorLabel = Text({
-		Position = UDim2.fromOffset(0, 40),
+		Position = UDim2.fromOffset(0, 34),
 		Size = UDim2.new(1, 0, 0, 12),
 		TextXAlignment = Enum.TextXAlignment.Right,
-		TextColor3 = Theme.Dim,
+		TextColor3 = Color3.new(1, 1, 1),
+		TextStrokeTransparency = 0,
 		Visible = false,
 	}, Details)
 	local ArmorOuter, ArmorInner = Box({ Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 0, 12), Visible = false }, Details)
