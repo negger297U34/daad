@@ -2868,6 +2868,14 @@ function Library:Playerlist(Opts)
 		TextStrokeTransparency = 0,
 		TextTruncate = Enum.TextTruncate.AtEnd,
 	}, Details)
+	local CopyButton = New("TextButton", { BackgroundTransparency = 1, BorderSizePixel = 0, Position = UDim2.fromOffset(0, 0), Size = UDim2.new(1, 0, 0, 14), Text = "", AutoButtonColor = false, ZIndex = 3 }, Details)
+	CopyButton.MouseButton1Click:Connect(function()
+		if not Selected then
+			return
+		end
+		pcall(setclipboard, string.format("%s / %s / %d", Selected.DisplayName, Selected.Name, Selected.UserId))
+		Library:Notify("copied", 2)
+	end)
 	local DisplayLabel = Text({ Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 14), TextTruncate = Enum.TextTruncate.AtEnd }, Details)
 	local StatusLabel = Text({ Position = UDim2.fromOffset(0, 32), Size = UDim2.new(1, 0, 0, 14), TextColor3 = Theme.Dim }, Details)
 	local ArmorLabel = Text({
@@ -2877,7 +2885,7 @@ function Library:Playerlist(Opts)
 		TextColor3 = Theme.Dim,
 		Visible = false,
 	}, Details)
-	local ArmorOuter, ArmorInner = Box({ Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 0, 12), Visible = false }, Details)
+	local ArmorOuter, ArmorInner = Box({ Position = UDim2.fromOffset(0, 48), Size = UDim2.new(1, 0, 0, 12), Visible = false }, Details)
 	local ArmorFill = New("Frame", { BackgroundColor3 = rgb(152, 188, 255), BorderSizePixel = 0, Size = UDim2.fromScale(0, 1) }, ArmorInner)
 	ArmorFill:SetAttribute("NoTheme", true)
 	local HealthLabel = Text({
@@ -3026,8 +3034,8 @@ function Library:Playerlist(Opts)
 		local Humanoid = Character and Character:FindFirstChildOfClass("Humanoid")
 		local Health = Humanoid and Humanoid.Health or 0
 		local MaxHealth = Humanoid and math.max(Humanoid.MaxHealth, 1) or 100
-		NameLabel.Text = Selected.Name
-		DisplayLabel.Text = Selected.DisplayName
+		NameLabel.Text = string.format("%s (@%s)", Selected.DisplayName, Selected.Name)
+		DisplayLabel.Text = ""
 
 		local Status = Selected == LocalPlayer and "you" or (Library.Friends[Selected.UserId] and "friend" or "enemy")
 		local Mine = LocalPlayer.Character and LocalPlayer.Character:FindFirstChild("HumanoidRootPart")
@@ -3038,6 +3046,12 @@ function Library:Playerlist(Opts)
 			StatusLabel.Text = Status
 		end
 		StatusLabel.TextColor3 = Status == "friend" and FRIEND or Theme.Dim
+
+		local Velocity = Theirs and Theirs.AssemblyLinearVelocity.Magnitude or 0
+		DisplayLabel.Text = StatusLabel.Text
+		DisplayLabel.TextColor3 = StatusLabel.TextColor3
+		StatusLabel.Text = string.format("velocity %.1f", Velocity)
+		StatusLabel.TextColor3 = Theme.Dim
 
 		HealthFill.Size = UDim2.fromScale(math.clamp(Health / MaxHealth, 0, 1), 1)
 		HealthLabel.Text = math.floor(Health + 0.5) .. "/" .. math.floor(MaxHealth + 0.5)
