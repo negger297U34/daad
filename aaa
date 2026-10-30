@@ -1534,6 +1534,9 @@ function Section:Dropdown(Opts)
 	local Display = Text({ Position = UDim2.fromOffset(5, 0), Size = UDim2.new(1, -10, 1, 0), TextTruncate = Enum.TextTruncate.AtEnd }, Inner)
 	local PlusOuter, PlusInner = Box({ AnchorPoint = Vector2.new(1, 0), Position = UDim2.new(1, 0, 0, 15), Size = UDim2.fromOffset(16, 18) }, Line)
 	local PlusLabel = Text({ Size = UDim2.fromScale(1, 1), Position = UDim2.fromOffset(0, -1), Text = "+", TextXAlignment = Enum.TextXAlignment.Center, TextYAlignment = Enum.TextYAlignment.Center, TextColor3 = Theme.Dim }, PlusInner)
+	PlusLabel.TextTransparency = 1
+	local PlusBar = New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(7, 1), BackgroundColor3 = Theme.Dim, BorderSizePixel = 0 }, PlusInner)
+	local PlusStem = New("Frame", { AnchorPoint = Vector2.new(0.5, 0.5), Position = UDim2.fromScale(0.5, 0.5), Size = UDim2.fromOffset(1, 7), BackgroundColor3 = Theme.Dim, BorderSizePixel = 0 }, PlusInner)
 	local Button = ClickArea(Line, 5)
 	Button.Position = UDim2.fromOffset(0, 15)
 	Button.Size = UDim2.new(1, 0, 0, 18)
@@ -1703,12 +1706,14 @@ function Section:Dropdown(Opts)
 		end
 
 		PlusLabel.Text = "-"
+		PlusStem.Visible = false
 
 		OpenPopup({
 			Frame = Frame,
 			Owner = Line,
 			Close = function()
 				PlusLabel.Text = "+"
+				PlusStem.Visible = true
 				Frame:Destroy()
 			end,
 		})
@@ -2872,8 +2877,8 @@ function Library:Playerlist(Opts)
 		TextColor3 = Theme.Dim,
 		Visible = false,
 	}, Details)
-	local ArmorOuter, ArmorInner = Box({ Position = UDim2.fromOffset(0, 53), Size = UDim2.new(1, 0, 0, 7), Visible = false }, Details)
-	local ArmorFill = New("Frame", { BackgroundColor3 = rgb(226, 232, 244), BorderSizePixel = 0, Size = UDim2.fromScale(0, 1) }, ArmorInner)
+	local ArmorOuter, ArmorInner = Box({ Position = UDim2.fromOffset(0, 40), Size = UDim2.new(1, 0, 0, 12), Visible = false }, Details)
+	local ArmorFill = New("Frame", { BackgroundColor3 = rgb(152, 188, 255), BorderSizePixel = 0, Size = UDim2.fromScale(0, 1) }, ArmorInner)
 	ArmorFill:SetAttribute("NoTheme", true)
 	local HealthLabel = Text({
 		Position = UDim2.fromOffset(0, 62),
@@ -2998,10 +3003,15 @@ function Library:Playerlist(Opts)
 		end
 	end)
 
+	local nextPlayerlistUpdate = 0
 	Connect(RunService.Heartbeat, function()
 		if not (Library.Open and Panel.Window.Visible) then
 			return
 		end
+		if os.clock() < nextPlayerlistUpdate then
+			return
+		end
+		nextPlayerlistUpdate = os.clock() + 0.1
 		if not Selected then
 			NameLabel.Text = "no player selected"
 			DisplayLabel.Text = ""
@@ -3034,7 +3044,7 @@ function Library:Playerlist(Opts)
 
 		local Ok, Armor, MaxArmor = pcall(GetArmor, Selected)
 		local HasArmor = Ok and type(Armor) == "number"
-		ArmorLabel.Visible = HasArmor
+		ArmorLabel.Visible = false
 		ArmorOuter.Visible = HasArmor
 		if HasArmor then
 			MaxArmor = math.max(tonumber(MaxArmor) or 100, 1)
