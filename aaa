@@ -2878,6 +2878,7 @@ function Library:Playerlist(Opts)
 	end)
 	local DisplayLabel = Text({ Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 14), TextTruncate = Enum.TextTruncate.AtEnd }, Details)
 	local StatusLabel = Text({ Position = UDim2.fromOffset(0, 16), Size = UDim2.new(1, 0, 0, 14), TextColor3 = Theme.Dim }, Details)
+	Panel.Status = StatusLabel
 	local ArmorLabel = Text({
 		Position = UDim2.fromOffset(0, 34),
 		Size = UDim2.new(1, 0, 0, 12),
