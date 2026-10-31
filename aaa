@@ -308,6 +308,14 @@ local Overlay = New("ScreenGui", {
 	DisplayOrder = 9001,
 }, Host)
 
+local NotifyGui = New("ScreenGui", {
+	Name = Library.Name .. "Notify",
+	IgnoreGuiInset = true,
+	ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	DisplayOrder = 9002,
+}, Host)
+
 Library.Gui = Gui
 Library.Overlay = Overlay
 
@@ -363,7 +371,7 @@ local function PaintStroke(Object)
 	end
 end
 
-for _, Root in { Gui, Overlay } do
+for _, Root in { Gui, Overlay, NotifyGui } do
 	Root.DescendantAdded:Connect(PaintStroke)
 end
 
@@ -390,7 +398,7 @@ local function ApplyTheme(Changes)
 	end
 
 	if #Map > 0 then
-		for _, Root in { Gui, Overlay } do
+		for _, Root in { Gui, Overlay, NotifyGui } do
 			for _, Object in Root:GetDescendants() do
 				if not Object:GetAttribute("NoTheme") then
 					if Object:IsA("GuiObject") then
@@ -413,7 +421,7 @@ local function ApplyTheme(Changes)
 		end
 	end
 
-	for _, Root in { Gui, Overlay } do
+	for _, Root in { Gui, Overlay, NotifyGui } do
 		for _, Object in Root:GetDescendants() do
 			PaintStroke(Object)
 		end
@@ -3337,14 +3345,6 @@ function Library:Settings(Opts)
 	Library._Settings = Panel
 	return Panel
 end
-
-local NotifyGui = New("ScreenGui", {
-	Name = Library.Name .. "Notify",
-	IgnoreGuiInset = true,
-	ResetOnSpawn = false,
-	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
-	DisplayOrder = 9002,
-}, Host)
 
 local NotifyHolder = New("Frame", {
 	AnchorPoint = Vector2.new(1, 1),
