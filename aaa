@@ -2442,6 +2442,16 @@ local function AttachTabs(Window, Top)
 			return Created
 		end
 
+		function Tab:Host(Side)
+			local Full = Side == "Full"
+			return New("Frame", {
+				BackgroundTransparency = 1,
+				BorderSizePixel = 0,
+				Position = Side == "Right" and UDim2.new(0.5, 4, 0, 14) or UDim2.fromOffset(9, 14),
+				Size = Full and UDim2.new(1, -18, 1, -22) or UDim2.new(0.5, -13, 1, -22),
+			}, Page)
+		end
+
 		function Tab:SetActive(State)
 			Tab.Active = State
 			Back.Visible = State
@@ -2491,6 +2501,13 @@ end
 
 function Library:Panel(Opts)
 	Opts = Opts or {}
+	if Opts.Host then
+		local Hosted = CreateSection(Opts.Host, Opts.Title or Opts.Name or "panel", true)
+		Hosted.Window = { Outer = Hosted.Frame, Body = Hosted.Frame, Visible = true }
+		Hosted.SetVisible = function() end
+		Hosted.Toggle = function() end
+		return Hosted
+	end
 	local Window = CreateWindow({
 		Width = Opts.Width or 280,
 		Height = Opts.Height or 400,
@@ -2521,6 +2538,7 @@ function Library:Preview(Opts)
 	Opts = Opts or {}
 	local Panel = Library:Panel({
 		Title = Opts.Title or "esp",
+		Host = Opts.Host,
 		Width = Opts.Width or 284,
 		Height = Opts.Height or 406,
 		Position = Opts.Position,
@@ -2810,6 +2828,7 @@ function Library:Playerlist(Opts)
 	Opts = Opts or {}
 	local Panel = Library:Panel({
 		Title = Opts.Title or "players",
+		Host = Opts.Host,
 		Width = Opts.Width or 380,
 		Height = Opts.Height or 356,
 		Position = Opts.Position,
@@ -3192,7 +3211,7 @@ end
 
 function Library:KeybindList(Opts)
 	Opts = Opts or {}
-	local Panel = Library:Panel({
+	local Panel = Opts.Section or Library:Panel({
 		Title = Opts.Title or "keybinds",
 		Width = Opts.Width or 190,
 		Height = Opts.Height or 160,
@@ -3227,17 +3246,7 @@ function Library:KeybindList(Opts)
 	return Panel
 end
 
-function Library:Settings(Opts)
-	Opts = Opts or {}
-	local Panel = Library:Panel({
-		Title = Opts.Title or "settings",
-		Width = Opts.Width or 230,
-		Height = Opts.Height or 200,
-		Position = Opts.Position,
-		Icon = Opts.Icon == nil and "palette" or Opts.Icon,
-		Visible = Opts.Visible == true,
-	})
-
+function Library:SettingsSection(Panel, KeyTarget)
 	local First = Panel:Colorpicker({
 		Name = "accent start",
 		Default = Theme.AccentA,
@@ -3257,7 +3266,7 @@ function Library:Settings(Opts)
 		Second:Set(Theme.AccentB)
 	end)
 
-	local MenuKeybind = Panel:Keybind({
+	local MenuKeybind = (KeyTarget or Panel):Keybind({
 		Name = "menu key",
 		Flag = "_MenuKey",
 		Default = Library.MenuKey,
@@ -3266,7 +3275,20 @@ function Library:Settings(Opts)
 	MenuKeybind.Bind.Changed = function(Key)
 		Library.MenuKey = Key
 	end
+end
 
+function Library:Settings(Opts)
+	Opts = Opts or {}
+	local Panel = Library:Panel({
+		Title = Opts.Title or "settings",
+		Host = Opts.Host,
+		Width = Opts.Width or 230,
+		Height = Opts.Height or 200,
+		Position = Opts.Position,
+		Icon = Opts.Icon == nil and "palette" or Opts.Icon,
+		Visible = Opts.Visible == true,
+	})
+	Library:SettingsSection(Panel)
 	Panel:Button({
 		Name = "unload",
 		Callback = function()
