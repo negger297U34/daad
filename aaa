@@ -3373,20 +3373,30 @@ end
 
 function Library:Notify(Message, Duration)
 	NotifyCount += 1
-	local Outer, Inner = Box({ Size = UDim2.fromOffset(120, 26), LayoutOrder = NotifyCount }, NotifyHolder, Theme.Background)
+	local Outer, Inner = Box({ Size = UDim2.fromOffset(200, 32), LayoutOrder = NotifyCount }, NotifyHolder, Theme.Background)
+	local Line = New("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 2) }, Inner)
+	AccentGradient(Line)
 	local Label = Text({
-		Position = UDim2.fromOffset(10, 0),
-		Size = UDim2.new(1, -20, 1, 0),
+		Position = UDim2.fromOffset(12, 2),
+		Size = UDim2.new(1, -24, 1, -3),
 		Text = tostring(Message),
 		TextTruncate = Enum.TextTruncate.AtEnd,
 	}, Inner)
 	Label.TextStrokeColor3 = StrokeColor()
 	local function Fit()
-		Outer.Size = UDim2.fromOffset(math.clamp(math.ceil(Label.TextBounds.X) + 22, 120, 360), 26)
+		Outer.Size = UDim2.fromOffset(math.clamp(math.ceil(Label.TextBounds.X) + 30, 200, 360), 32)
 	end
 	Label:GetPropertyChangedSignal("TextBounds"):Connect(Fit)
 	Fit()
+	local Timer = New("Frame", {
+		AnchorPoint = Vector2.new(0, 1),
+		BackgroundColor3 = Theme.AccentB,
+		BorderSizePixel = 0,
+		Position = UDim2.fromScale(0, 1),
+		Size = UDim2.new(1, 0, 0, 1),
+	}, Inner)
 	Duration = tonumber(Duration) or 3
+	TweenService:Create(Timer, TweenInfo.new(Duration, Enum.EasingStyle.Linear), { Size = UDim2.new(0, 0, 0, 1) }):Play()
 	task.delay(Duration, function()
 		Outer:Destroy()
 	end)
