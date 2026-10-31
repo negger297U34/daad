@@ -351,6 +351,22 @@ local function RefreshGradients(List, Sequence)
 	end
 end
 
+local function StrokeColor()
+	local Back = Theme.Background
+	local Light = 0.299 * Back.R + 0.587 * Back.G + 0.114 * Back.B > 0.6
+	return Light and Color3.new(1, 1, 1) or Color3.new(0, 0, 0)
+end
+
+local function PaintStroke(Object)
+	if Object:IsA("TextLabel") or Object:IsA("TextButton") or Object:IsA("TextBox") then
+		Object.TextStrokeColor3 = StrokeColor()
+	end
+end
+
+for _, Root in { Gui, Overlay } do
+	Root.DescendantAdded:Connect(PaintStroke)
+end
+
 local function ApplyTheme(Changes)
 	local Map = {}
 	for Key, Value in Changes do
@@ -394,6 +410,12 @@ local function ApplyTheme(Changes)
 					end
 				end
 			end
+		end
+	end
+
+	for _, Root in { Gui, Overlay } do
+		for _, Object in Root:GetDescendants() do
+			PaintStroke(Object)
 		end
 	end
 
@@ -2234,9 +2256,9 @@ local function CreateWindow(Opts)
 				table.insert(TitleChars, { Label = Label, Padding = Padding, Accent = Accent })
 			end
 		end
-		Add(tostring(Main), true)
+		Add(tostring(Main), Suffix == nil)
 		if Suffix ~= nil then
-			Add(tostring(Suffix), false)
+			Add(tostring(Suffix), true)
 		end
 	end
 
@@ -2249,7 +2271,7 @@ local function CreateWindow(Opts)
 					Entry.Padding.PaddingTop = UDim.new(0, 2 + Shift)
 					Entry.Padding.PaddingBottom = UDim.new(0, 2 - Shift)
 					if Entry.Accent then
-						Entry.Label.TextColor3 = Theme.AccentA:Lerp(Theme.AccentB, 0.5 + 0.5 * math.sin(Now * 2 - Index * 0.45))
+						Entry.Label.TextColor3 = Theme.AccentB
 					end
 				end
 			end
@@ -2838,12 +2860,14 @@ function Library:Playerlist(Opts)
 	local Root = Panel.Frame
 	local GetArmor = type(Opts.Armor) == "function" and Opts.Armor or DefaultArmor
 	local Selected
+	local Shift = Opts.ExtraActions and 26 or 0
+	Panel.ActionLabels = {}
 
 	local Scroll = New("ScrollingFrame", {
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
 		Position = UDim2.fromOffset(0, 8),
-		Size = UDim2.new(1, 0, 1, -154),
+		Size = UDim2.new(1, 0, 1, -154 - Shift),
 		CanvasSize = UDim2.fromOffset(0, 0),
 		AutomaticCanvasSize = Enum.AutomaticSize.Y,
 		ScrollBarThickness = 2,
@@ -2856,7 +2880,7 @@ function Library:Playerlist(Opts)
 		AnchorPoint = Vector2.new(0, 1),
 		BackgroundColor3 = Theme.Outline,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 10, 1, -138),
+		Position = UDim2.new(0, 10, 1, -138 - Shift),
 		Size = UDim2.new(1, -20, 0, 1),
 	}, Root)
 
@@ -2864,7 +2888,7 @@ function Library:Playerlist(Opts)
 		AnchorPoint = Vector2.new(0, 1),
 		BackgroundTransparency = 1,
 		BorderSizePixel = 0,
-		Position = UDim2.new(0, 10, 1, -38),
+		Position = UDim2.new(0, 10, 1, -38 - Shift),
 		Size = UDim2.new(1, -20, 0, 92),
 	}, Root)
 	local AvatarOuter, AvatarInner = Box({ Size = UDim2.fromOffset(84, 92) }, Info)
@@ -2920,47 +2944,61 @@ function Library:Playerlist(Opts)
 	local HealthFill = New("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.fromScale(0, 1) }, HealthInner)
 	FillGradient(HealthFill)
 
-	local Actions = New("Frame", {
-		AnchorPoint = Vector2.new(0, 1),
-		BackgroundTransparency = 1,
-		BorderSizePixel = 0,
-		Position = UDim2.new(0, 10, 1, -8),
-		Size = UDim2.new(1, -20, 0, 22),
-	}, Root)
+	local function ActionRow(Offset)
+		return New("Frame", {
+			AnchorPoint = Vector2.new(0, 1),
+			BackgroundTransparency = 1,
+			BorderSizePixel = 0,
+			Position = UDim2.new(0, 10, 1, Offset),
+			Size = UDim2.new(1, -20, 0, 22),
+		}, Root)
+	end
 	local FRIEND = rgb(110, 220, 140)
 	local Items = {}
 	local Tags = {}
 	local FriendLabel
 	local Paint
-	local Names = Opts.Actions or { "friend", "spectate", "teleport", "target" }
-	for Index, Name in Names do
-		local Outer, Inner = Box({
-			Position = UDim2.new((Index - 1) / #Names, 0, 0, 0),
-			Size = UDim2.new(1 / #Names, Index < #Names and -3 or 0, 1, 0),
-		}, Actions)
-		local Label = Text({ Size = UDim2.fromScale(1, 1), Text = Name, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = Theme.Dim }, Inner)
-		if Name == "friend" then
-			FriendLabel = Label
-		end
-		local Click = ClickArea(Outer, 5)
-		Click.MouseEnter:Connect(function()
-			Label.TextColor3 = Theme.Text
-		end)
-		Click.MouseLeave:Connect(function()
-			Label.TextColor3 = Theme.Dim
-		end)
-		Click.MouseButton1Click:Connect(function()
-			if not Selected then
-				return
-			end
-			local Action = Name
+	local function BuildActions(Holder, Names)
+		for Index, Name in Names do
+			local Outer, Inner = Box({
+				Position = UDim2.new((Index - 1) / #Names, 0, 0, 0),
+				Size = UDim2.new(1 / #Names, Index < #Names and -3 or 0, 1, 0),
+			}, Holder)
+			local Label = Text({ Size = UDim2.fromScale(1, 1), Text = Name, TextXAlignment = Enum.TextXAlignment.Center, TextColor3 = Theme.Dim }, Inner)
+			Panel.ActionLabels[Name] = Label
 			if Name == "friend" then
-				Library.Friends[Selected.UserId] = not Library.Friends[Selected.UserId] or nil
-				Action = Library.Friends[Selected.UserId] and "friend" or "unfriend"
-				Paint()
+				FriendLabel = Label
 			end
-			Call(Opts.Callback, Action, Selected)
-		end)
+			local Click = ClickArea(Outer, 5)
+			Click.MouseEnter:Connect(function()
+				Label.TextColor3 = Theme.Text
+			end)
+			Click.MouseLeave:Connect(function()
+				Label.TextColor3 = Theme.Dim
+			end)
+			Click.MouseButton1Click:Connect(function()
+				if not Selected then
+					return
+				end
+				local Action = Name
+				if Name == "friend" then
+					Library.Friends[Selected.UserId] = not Library.Friends[Selected.UserId] or nil
+					Action = Library.Friends[Selected.UserId] and "friend" or "unfriend"
+					Paint()
+				end
+				Call(Opts.Callback, Action, Selected)
+			end)
+			Click.MouseButton2Click:Connect(function()
+				if Selected then
+					Call(Opts.Callback, Name .. "_right", Selected)
+				end
+			end)
+		end
+	end
+
+	BuildActions(ActionRow(-8 - Shift), Opts.Actions or { "friend", "spectate", "teleport", "target" })
+	if Opts.ExtraActions then
+		BuildActions(ActionRow(-8), Opts.ExtraActions)
 	end
 
 	Paint = function()
@@ -3300,47 +3338,55 @@ function Library:Settings(Opts)
 	return Panel
 end
 
+local NotifyGui = New("ScreenGui", {
+	Name = Library.Name .. "Notify",
+	IgnoreGuiInset = true,
+	ResetOnSpawn = false,
+	ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
+	DisplayOrder = 9002,
+}, Host)
+
 local NotifyHolder = New("Frame", {
 	AnchorPoint = Vector2.new(1, 1),
 	BackgroundTransparency = 1,
 	BorderSizePixel = 0,
 	Position = UDim2.new(1, -20, 1, -20),
 	Size = UDim2.fromOffset(360, 400),
-}, Overlay)
-New("UIListLayout", {
+}, NotifyGui)
+local NotifyLayout = New("UIListLayout", {
 	SortOrder = Enum.SortOrder.LayoutOrder,
 	VerticalAlignment = Enum.VerticalAlignment.Bottom,
 	HorizontalAlignment = Enum.HorizontalAlignment.Right,
-	Padding = UDim.new(0, 8),
+	Padding = UDim.new(0, 6),
 }, NotifyHolder)
 
 local NotifyCount = 0
 
+function Library:SetNotifyPosition(Corner)
+	local Top = string.find(Corner, "Top", 1, true) ~= nil
+	local Left = string.find(Corner, "Left", 1, true) ~= nil
+	NotifyHolder.AnchorPoint = Vector2.new(Left and 0 or 1, Top and 0 or 1)
+	NotifyHolder.Position = UDim2.new(Left and 0 or 1, Left and 20 or -20, Top and 0 or 1, Top and 20 or -20)
+	NotifyLayout.VerticalAlignment = Top and Enum.VerticalAlignment.Top or Enum.VerticalAlignment.Bottom
+	NotifyLayout.HorizontalAlignment = Left and Enum.HorizontalAlignment.Left or Enum.HorizontalAlignment.Right
+end
+
 function Library:Notify(Message, Duration)
 	NotifyCount += 1
-	local Outer, Inner = Box({ Size = UDim2.fromOffset(200, 32), LayoutOrder = NotifyCount }, NotifyHolder, Theme.Background)
-	local Line = New("Frame", { BackgroundColor3 = Color3.new(1, 1, 1), BorderSizePixel = 0, Size = UDim2.new(1, 0, 0, 2) }, Inner)
-	AccentGradient(Line)
+	local Outer, Inner = Box({ Size = UDim2.fromOffset(120, 26), LayoutOrder = NotifyCount }, NotifyHolder, Theme.Background)
 	local Label = Text({
-		Position = UDim2.fromOffset(12, 2),
-		Size = UDim2.new(1, -24, 1, -3),
+		Position = UDim2.fromOffset(10, 0),
+		Size = UDim2.new(1, -20, 1, 0),
 		Text = tostring(Message),
 		TextTruncate = Enum.TextTruncate.AtEnd,
 	}, Inner)
+	Label.TextStrokeColor3 = StrokeColor()
 	local function Fit()
-		Outer.Size = UDim2.fromOffset(math.clamp(math.ceil(Label.TextBounds.X) + 30, 200, 360), 32)
+		Outer.Size = UDim2.fromOffset(math.clamp(math.ceil(Label.TextBounds.X) + 22, 120, 360), 26)
 	end
 	Label:GetPropertyChangedSignal("TextBounds"):Connect(Fit)
 	Fit()
-	local Timer = New("Frame", {
-		AnchorPoint = Vector2.new(0, 1),
-		BackgroundColor3 = Theme.AccentB,
-		BorderSizePixel = 0,
-		Position = UDim2.fromScale(0, 1),
-		Size = UDim2.new(1, 0, 0, 1),
-	}, Inner)
 	Duration = tonumber(Duration) or 3
-	TweenService:Create(Timer, TweenInfo.new(Duration, Enum.EasingStyle.Linear), { Size = UDim2.new(0, 0, 0, 1) }):Play()
 	task.delay(Duration, function()
 		Outer:Destroy()
 	end)
@@ -3461,6 +3507,7 @@ function Library:Unload()
 	table.clear(Library.Binds)
 	Gui:Destroy()
 	Overlay:Destroy()
+	NotifyGui:Destroy()
 end
 
 pcall(function()
